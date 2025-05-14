@@ -65,7 +65,7 @@ if __name__ == "__main__":
     threading.Thread(target=start_server, daemon=True).start()
 
     while True:
-        choice = input("Connect to a peer? (yes/no): ").lower().strip()
+        choice = input("Connect to another peer? (yes/no): ").lower().strip()
         if choice == 'no':
             break
         ip = input("Enter peer IP: ").strip()
