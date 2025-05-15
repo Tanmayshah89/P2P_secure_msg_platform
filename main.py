@@ -51,7 +51,7 @@ def send_messages():
     while True:
         msg = input("Enter message: ")
         if is_spam(msg):
-            print("[SPAM DETECTED] Message blocked.")
+            print("[SPAM DETECTED]-Message is blocked.")
             continue
         encrypted = des_encrypt(msg, KEY)
         with lock:
