@@ -4,7 +4,20 @@ from secure import des_encrypt, des_decrypt
 
 import socket
 import threading
+import uuid
+import time
 
+PEER_ID = str(uuid.uuid4())[:8]
+processed_messages = set()  # To track processed messages
+
+def get_user_info():
+    username = input("Enter your username: ").strip()
+    while not username:
+        print("Username cannot be empty!")
+        username = input("Enter your username: ").strip()
+    return username
+
+username = get_user_info()
 HOST = input("Enter your IP: ").strip()
 PORT = int(input("Enter your port: "))
 KEY = "mysecret"
@@ -19,10 +32,18 @@ def handle_client(conn):
             if not data:
                 break
             decrypted = des_decrypt(data, KEY)
-            print(f"\n[RECEIVED]: {decrypted}")
-        except:
-            print("[ERROR] Connection lost")
+            message_id, sender_id, sender_username, actual_msg = decrypted.split(":", 3)
+            
+            # Skip if message already processed or is from self
+            if message_id in processed_messages or sender_id == PEER_ID:
+                continue
+                
+            processed_messages.add(message_id)
+            print(f"\n[RECEIVED from {sender_username}]: {actual_msg}")
+        except Exception as e:
+            print(f"[ERROR] Connection lost: {e}")
             break
+
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,9 +72,13 @@ def send_messages():
     while True:
         msg = input("Enter message: ")
         if is_spam(msg):
-            print("[SPAM DETECTED]-Message is blocked.")
+            print("[SPAM DETECTED] Message blocked.")
             continue
-        encrypted = des_encrypt(msg, KEY)
+            
+        message_id = str(int(time.time() * 1000))  # Generate unique message ID
+        full_msg = f"{message_id}:{PEER_ID}:{username}:{msg}"
+        encrypted = des_encrypt(full_msg, KEY)
+        
         with lock:
             for peer in peers:
                 try:
@@ -61,11 +86,13 @@ def send_messages():
                 except:
                     print("[ERROR] Failed to send message.")
 
+
+
 if __name__ == "__main__":
     threading.Thread(target=start_server, daemon=True).start()
 
     while True:
-        choice = input("Connect to another peer? (yes/no): ").lower().strip()
+        choice = input("Connect to a  peer? (yes/no): ").lower().strip()
         if choice == 'no':
             break
         ip = input("Enter peer IP: ").strip()
@@ -73,3 +100,4 @@ if __name__ == "__main__":
         connect_to_peer(ip, port)
 
     send_messages()
+
